@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>私の部屋が映画になったら？ | Ohouse</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.5/dist/dom-to-image-more.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #F0F4F8; font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    #screen-upload { align-items: center; justify-content: center; padding: 24px; }
+    .upload-card { width: 100%; max-width: 420px; background: white; border-radius: 20px; box-shadow: 0 2px 20px rgba(0,0,0,0.07); overflow: hidden; }
+    .upload-title { padding: 28px 24px 20px; }
+    .upload-title h1 { font-size: 32px; font-weight: 900; line-height: 1.2; color: #575757; margin-bottom: 8px; }
+    .upload-title h1 span { color: #00A1FF; }
+    .upload-title p { font-size: 14px; color: rgba(87,87,87,0.45); line-height: 1.6; }
+    .divider { height: 1px; border-top: 1.5px dashed rgba(0,0,0,0.1); margin: 0 16px; }
+    .upload-area-wrap { padding: 20px 16px; }
+    .upload-area { width: 100%; background: #F4F6F8; border-radius: 12px; cursor: pointer; min-height: 180px; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background 0.2s; }
+    .upload-area:hover { background: #ECF1F5; }
+    .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px; }
+    .upload-placeholder .main { font-size: 15px; font-weight: 600; color: rgba(87,87,87,0.6); }
+    .upload-placeholder .sub { font-size: 12px; color: rgba(87,87,87,0.35); }
+    #preview-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; display: none; }
+    .upload-btn-wrap { padding: 16px; }
+    #btn-analyze { width: 100%; padding: 18px; background: #E8EEF3; color: #B0BEC5; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: not-allowed; font-family: inherit; transition: all 0.2s; }
+    #btn-analyze.ready { background: #00A1FF; color: white; cursor: pointer; }
+
+    #screen-loading { flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px; text-align: center; }
+    .loading-icon { width: 80px; height: 80px; background: white; border-radius: 50%; box-shadow: 0 6px 24px rgba(0,161,255,0.18); display: flex; align-items: center; justify-content: center; }
+    #loading-msg { font-size: 18px; font-weight: 700; color: #575757; }
+    .loading-sub { font-size: 13px; color: rgba(87,87,87,0.45); }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #00A1FF; animation: dotb 1s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.15s; }
+    .dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes dotb { 0%,80%,100%{transform:scale(0.6);opacity:0.3} 40%{transform:scale(1.1);opacity:1} }
+
+    #screen-error { flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px; text-align: center; }
+    .err-emoji { font-size: 36px; }
+    .err-title { font-size: 16px; font-weight: 700; color: #575757; }
+    #err-msg { font-size: 12px; color: #999; word-break: break-all; max-width: 300px; line-height: 1.6; }
+    #btn-retry { padding: 12px 28px; background: #00A1FF; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    #screen-result { flex-direction: column; background: #F0F4F8; }
+    .result-inner { max-width: 420px; width: 100%; margin: 0 auto; padding: 20px 16px 60px; }
+    .ticket { background: white; color: #575757; border-radius: 16px; box-shadow: 0 2px 20px rgba(0,0,0,0.07); overflow: hidden; animation: fadeUp 0.5s ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+    .ticket-header { padding: 14px 18px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed rgba(0,0,0,0.1); }
+    .ticket-logo { display: flex; align-items: center; gap: 7px; }
+    .logo-icon { width: 20px; height: 20px; background: #00A1FF; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .logo-text { font-size: 14px; font-weight: 800; }
+    .ticket-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 600; color: #00A1FF; letter-spacing: 0.1em; white-space: nowrap; flex-shrink: 0; display: inline-block; }
+
+    .poster { position: relative; height: 320px; overflow: hidden; }
+    .poster img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) saturate(1.2); display: block; }
+    .poster-gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,8,16,0.92) 0%, rgba(8,8,16,0.2) 55%, transparent 100%); }
+    .poster-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 18px 20px 20px; }
+    .genre-badge { display: inline-flex; align-items: center; background: #00A1FF; color: white; font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 3px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+    .movie-title { font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; font-size: 28px; font-weight: 900; color: white; line-height: 1.2; letter-spacing: -0.5px; }
+    .movie-tagline { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 8px; line-height: 1.6; }
+
+    .perforation { display: flex; align-items: center; margin: 0 -1px; }
+    .perf-notch { width: 14px; height: 14px; border-radius: 50%; background: #F0F4F8; flex-shrink: 0; }
+    .perf-line { flex: 1; border-top: 1px dashed rgba(0,0,0,0.1); }
+
+    .info-grid { padding: 16px 20px 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 8px; border-bottom: 1px dashed rgba(0,0,0,0.1); }
+    .info-label { font-size: 8px; font-family: 'DM Mono', monospace; color: rgba(87,87,87,0.4); letter-spacing: 0.12em; margin-bottom: 3px; }
+    .info-value { font-size: 11px; font-weight: 700; color: #1a1a1a; line-height: 1.3; }
+
+    .vibe-section { padding: 14px 20px; border-bottom: 1px dashed rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+    .section-label { font-size: 11px; font-family: 'DM Mono', monospace; color: #666; letter-spacing: 0.08em; white-space: nowrap; flex-shrink: 0; font-weight: 600; }
+    .section-label-block { font-size: 11px; font-family: 'DM Mono', monospace; color: #666; letter-spacing: 0.08em; margin-bottom: 10px; font-weight: 600; }
+    .traits { display: flex; flex-wrap: nowrap; gap: 6px; overflow: hidden; }
+    .trait-tag { font-size: 11px; font-weight: 600; background: #EEF7FF; color: #00A1FF; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+    .trait-desc { font-size: 12px; color: #1a1a1a; line-height: 1.65; word-wrap: break-word; overflow-wrap: break-word; word-break: keep-all; }
+
+    .cast-section { padding: 14px 20px; border-bottom: 1px dashed rgba(0,0,0,0.1); }
+    .cast-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .cast-desc { font-size: 12px; color: #1a1a1a; line-height: 1.65; word-wrap: break-word; overflow-wrap: break-word; text-align: justify; }
+
+    .scenes-section { padding: 14px 20px; border-bottom: 1px dashed rgba(0,0,0,0.1); }
+    .scene-item { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 5px; width: 100%; }
+    .scene-arrow { color: #00A1FF; font-size: 12px; margin-top: 2px; flex-shrink: 0; }
+    .scene-text { font-size: 12px; color: #1a1a1a; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; word-break: keep-all; min-width: 0; flex: 1; }
+
+    .barcode-section { padding: 12px 20px 14px; }
+    .barcode-num { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(87,87,87,0.3); text-align: center; letter-spacing: 0.22em; margin-top: 4px; }
+
+    .reco-section { padding: 20px; background: white; border-radius: 16px; box-shadow: 0 2px 20px rgba(0,0,0,0.07); margin-top: 16px; animation: fadeUp 0.5s 0.12s ease both; }
+    .reco-title { font-size: 16px; font-weight: 800; color: #1a1a1a; margin-bottom: 6px; }
+    .reco-sub { font-size: 12px; color: #333; line-height: 1.6; margin-bottom: 14px; }
+    .reco-cards { display: flex; flex-direction: column; gap: 10px; }
+    .reco-card { display: flex; align-items: center; justify-content: space-between; background: #EEF7FF; border: none; border-radius: 12px; padding: 14px 16px; text-decoration: none; color: inherit; transition: background 0.2s; }
+    .reco-card:hover { background: #DCF0FF; }
+    .reco-card-name { font-size: 13px; font-weight: 700; color: #00A1FF; margin-bottom: 2px; }
+    .reco-card-sub { font-size: 11px; color: #999; }
+    .reco-arrow { width: 28px; height: 28px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #btn-save-ticket { width: 100%; margin-top: 16px; padding: 14px 0; background: #00A1FF; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; color: white; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+    #btn-save-ticket:hover { background: #0090e6; }
+    #btn-reset { width: 100%; margin-top: 20px; padding: 14px 0; background: white; border: 1px solid #E5E5E5; border-radius: 12px; font-size: 14px; font-weight: 700; color: #aaa; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+    #btn-reset:hover { background: #EEF7FF; }
+    .scallop svg { display: block; width: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- UPLOAD -->
+<div id="screen-upload" class="screen active">
+  <div class="upload-card">
+    <div class="upload-title">
+      <h1>私の部屋が<br><span>映画</span>になったら？</h1>
+      <p>お部屋の写真1枚で、あなただけの映画チケットを作りましょう</p>
+    </div>
+    <div class="divider"></div>
+    <div class="upload-area-wrap">
+      <div class="upload-area" id="upload-area">
+        <div class="upload-placeholder" id="upload-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#AAAAAA" stroke-width="1.5" width="36" height="36">
+            <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span class="main">お部屋の写真をアップロード</span>
+          <span class="sub">PNG, JPG対応 · 最大10MB</span>
+        </div>
+        <img id="preview-img" alt="" />
+      </div>
+      <input type="file" id="file-input" accept="image/*" style="display:none" />
+    </div>
+    <div class="divider"></div>
+    <div class="upload-btn-wrap">
+      <button id="btn-analyze" disabled>チケットを発券する</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="screen-loading" class="screen">
+  <div class="loading-icon">
+    <svg viewBox="0 0 1600 1600" style="width:44px;height:44px">
+      <path d="M841.62 407.32C814.516 397.56 785.484 397.56 758.38 407.32C707.797 425.532 545.118 532.195 458.043 622C411.078 670.434 400 703.937 400 762.001C400 771.684 400 781.687 400 791.902C400.74 884.018 405.381 993.684 421.64 1047C449.746 1139.16 491.996 1200 759.001 1200H840.999C1108 1200 1150.25 1139.16 1178.36 1047C1194.62 993.684 1199.26 884.018 1200 791.897C1200 781.682 1200 771.684 1200 761.996C1200 703.932 1188.92 670.428 1141.96 621.995C1054.88 532.2 892.213 425.532 841.62 407.32Z" fill="#00A1FF"/>
+    </svg>
+  </div>
+  <div id="loading-msg">チケット印刷中...</div>
+  <div class="loading-sub">AIがあなたのお部屋を分析しています 🎬</div>
+  <div class="dots">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+</div>
+
+<!-- ERROR -->
+<div id="screen-error" class="screen">
+  <div class="err-emoji">😅</div>
+  <div class="err-title">エラーが発生しました</div>
+  <div id="err-msg"></div>
+  <button id="btn-retry">もう一度試す</button>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-inner">
+    <div class="ticket">
+      <div class="ticket-header">
+        <div class="ticket-logo">
+          <svg viewBox="0 0 1600 1600" style="width:22px;height:22px">
+            <path d="M841.62 407.32C814.516 397.56 785.484 397.56 758.38 407.32C707.797 425.532 545.118 532.195 458.043 622C411.078 670.434 400 703.937 400 762.001C400 771.684 400 781.687 400 791.902C400.74 884.018 405.381 993.684 421.64 1047C449.746 1139.16 491.996 1200 759.001 1200H840.999C1108 1200 1150.25 1139.16 1178.36 1047C1194.62 993.684 1199.26 884.018 1200 791.897C1200 781.682 1200 771.684 1200 761.996C1200 703.932 1188.92 670.428 1141.96 621.995C1054.88 532.2 892.213 425.532 841.62 407.32Z" fill="#00A1FF"/>
+          </svg>
+          <svg viewBox="370 380 2380 540" style="height:14px">
+            <path d="M646.401 400.005C784.164 400.005 889.273 501.176 889.287 640.524C889.41 645.965 889.407 649.019 889.273 654.46C889.273 794.118 783.954 894.993 646.401 894.993C645.227 894.997 644.568 895.002 643.393 894.993C505.22 894.993 400.508 793.045 400.522 654.469C400.387 649.027 400.384 645.971 400.508 640.529C400.508 502.253 505.005 400.005 643.393 400.005C644.568 399.996 645.227 400.001 646.401 400.005ZM645.569 479.256C557.971 479.256 492.46 549.269 492.46 644.047L492.47 651.622H492.474C492.46 746.695 557.508 815.743 645.569 815.743C733.63 815.743 797.335 746.695 797.325 651.622L797.334 644.047C797.334 549.273 733.168 479.256 645.569 479.256Z" fill="black"/>
+            <path d="M930.445 400H1015.07V594.775C1026.71 576.417 1042.16 562.089 1061.41 551.79C1081.12 541.044 1102.83 535.671 1126.56 535.671C1151.64 535.671 1173.58 540.82 1192.38 551.119C1211.64 561.417 1226.64 576.193 1237.38 595.447C1248.13 614.253 1253.5 636.193 1253.5 661.268V889.625H1168.88V681.417C1168.88 660.372 1162.83 643.357 1150.74 630.372C1138.65 617.387 1122.31 610.895 1101.71 610.895C1083.36 610.895 1067.68 615.82 1054.7 625.671C1041.71 635.521 1031.86 650.074 1025.15 669.327C1018.43 688.133 1015.07 710.745 1015.07 737.163V889.625H930.445V400Z" fill="black"/>
+            <path d="M1470.83 535.675C1571.12 535.675 1647.64 609.116 1647.65 710.271C1647.74 714.22 1647.74 716.438 1647.64 720.387C1647.64 821.766 1570.97 894.993 1470.83 894.993C1469.97 894.996 1469.49 895 1468.64 894.993C1368.04 894.993 1291.81 820.987 1291.82 720.393C1291.72 716.443 1291.72 714.225 1291.81 710.275C1291.81 609.899 1367.89 535.676 1468.64 535.675C1469.49 535.669 1469.97 535.673 1470.83 535.675ZM1470.14 608.881C1417.45 608.881 1378.06 653.181 1378.06 713.15L1378.06 717.942H1378.06C1378.06 778.098 1417.18 821.787 1470.14 821.787C1523.1 821.787 1561.41 778.098 1561.4 717.942L1561.41 713.15C1561.41 653.184 1522.82 608.882 1470.14 608.881Z" fill="black"/>
+            <path d="M2009.03 889.628H1924.4V835.897C1912.76 854.255 1897.09 868.807 1877.39 879.553C1858.13 889.852 1836.64 895.001 1812.91 895.001C1788.28 895.001 1766.34 889.852 1747.09 879.553C1727.83 869.255 1712.83 854.702 1702.09 835.897C1691.79 816.643 1686.64 794.479 1686.64 769.404V541.047H1770.6V749.927C1770.6 770.524 1776.64 787.315 1788.73 800.3C1801.27 813.285 1817.61 819.777 1837.76 819.777C1856.12 819.777 1871.79 814.852 1884.77 805.001C1897.76 795.15 1907.61 780.822 1914.33 762.016C1921.04 743.21 1924.4 720.598 1924.4 694.181V541.047H2009.03V889.628Z" fill="black"/>
+            <path d="M2192.36 535.672C2248.94 535.672 2297.52 546.626 2334.82 581.153L2284.47 637.064C2260.17 615.9 2222.12 604.633 2192.36 604.633C2165.5 604.633 2146.02 615.597 2146.02 635.746C2146.02 652.537 2160.79 662.611 2183.63 667.313L2238.03 678.731C2297.14 690.82 2342.81 713.657 2342.81 784.85C2342.81 845.297 2285.72 894.998 2199.75 894.998C2135.03 894.998 2073.48 875.16 2045.92 833.182L2097.94 775.409C2128.26 804.407 2158.24 823.134 2199.75 823.134C2233.33 823.134 2256.84 808.357 2256.84 786.865C2256.84 768.731 2242.73 757.984 2219.23 753.283L2164.82 741.865C2111.09 730.447 2062.06 704.253 2062.06 635.746C2062.06 581.344 2111.76 535.672 2192.36 535.672Z" fill="black"/>
+            <path d="M2536.41 535.672C2650.59 535.672 2705.66 621.642 2705.66 705.597C2705.66 719.701 2704.32 736.493 2704.32 736.493H2449.77C2457.16 792.238 2492.08 823.805 2543.13 823.805C2582.44 823.805 2612.7 805.922 2643.75 777.145L2693.12 831.977C2660.09 873.666 2602.9 895 2541.11 895C2426.26 894.999 2366.48 806.343 2366.48 715C2366.48 624.329 2422.23 535.672 2536.41 535.672ZM2536.41 600.149C2492.75 600.149 2463.2 626.343 2452.45 672.686H2614.32C2610.96 631.045 2584.1 600.149 2536.41 600.149Z" fill="black"/>
+          </svg>
+        </div>
+        <span class="ticket-label" style="white-space:nowrap">MOVIE&nbsp;TICKET</span>
+      </div>
+
+      <div class="poster">
+        <img id="result-img" alt="" />
+        <div class="poster-gradient"></div>
+        <div class="poster-info">
+          <div class="genre-badge" id="result-genre-badge"></div>
+          <div class="movie-title" id="result-title"></div>
+          <div class="movie-tagline" id="result-tagline"></div>
+        </div>
+      </div>
+
+      <div class="perforation">
+        <div class="perf-notch"></div>
+        <div class="perf-line"></div>
+        <div class="perf-notch"></div>
+      </div>
+
+      <div class="info-grid">
+        <div><div class="info-label">YEAR</div><div class="info-value" id="result-year">—</div></div>
+        <div><div class="info-label">GENRE</div><div class="info-value" id="result-genre-text">—</div></div>
+        <div><div class="info-label">TICKET NO</div><div class="info-value" id="result-ticketno">—</div></div>
+      </div>
+
+      <div class="vibe-section">
+        <div class="section-label">VIBE</div>
+        <div class="traits" id="result-traits"></div>
+      </div>
+
+      <div class="cast-section">
+        <div class="section-label-block">CAST — この部屋に住む主人公は</div>
+        <div class="cast-traits" id="result-cast-traits"></div>
+        <div class="cast-desc" id="result-cast-desc"></div>
+      </div>
+
+      <div class="scenes-section">
+        <div class="section-label-block">KEY SCENES</div>
+        <div id="result-scenes"></div>
+      </div>
+
+      <div class="barcode-section">
+        <svg id="barcode-svg" preserveAspectRatio="none" style="display:block;width:100%;height:32px"></svg>
+        <div class="barcode-num" id="barcode-num"></div>
+      </div>
+    </div>
+
+    <button id="btn-save-ticket">チケット画像を保存する</button>
+
+    <div class="reco-section">
+      <div class="reco-title">こんなアイテムはいかがですか？</div>
+      <div class="reco-sub">あなたの映画のような空間、Ohouseで完成させましょう。</div>
+      <div class="reco-cards" id="reco-cards"></div>
+      <button id="btn-reset">別のお部屋の写真でもう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BASE = "https://www.ohouse.com/ja-JP/store";
+  const GC = {
+    "ロマンス": [
+      { n: "ソファ", s: "やわらかい空間づくりに", u: BASE + "/category?category_id=1124" },
+      { n: "ファブリック", s: "カーテン・クッションなど", u: BASE + "/category?category_id=1143" },
+      { n: "インテリア小物・照明", s: "雰囲気を彩るアイテム", u: BASE + "/category?category_id=1128" },
+    ],
+    "ヒーリング": [
+      { n: "ソファ", s: "くつろぎの時間のために", u: BASE + "/category?category_id=1124" },
+      { n: "生活雑貨", s: "毎日が少し楽しくなる", u: BASE + "/category?category_id=1129" },
+      { n: "インテリア小物・照明", s: "癒しの空間に", u: BASE + "/category?category_id=1128" },
+    ],
+    "ドラマ": [
+      { n: "椅子", s: "主役になれる一脚を", u: BASE + "/category?category_id=1127" },
+      { n: "収納家具", s: "整えられた空間が主役", u: BASE + "/category?category_id=1125" },
+      { n: "ベッド", s: "物語のはじまりに", u: BASE + "/category?category_id=1132" },
+    ],
+    "ミステリー": [
+      { n: "インテリア小物・照明", s: "ムードのある照明を", u: BASE + "/category?category_id=1128" },
+      { n: "収納家具", s: "秘密を隠すのに", u: BASE + "/category?category_id=1125" },
+      { n: "椅子", s: "考える椅子が似合う", u: BASE + "/category?category_id=1127" },
+    ],
+    "ファンタジー": [
+      { n: "インテリア小物・照明", s: "非日常を演出する", u: BASE + "/category?category_id=1128" },
+      { n: "ファブリック", s: "色と質感で世界観を", u: BASE + "/category?category_id=1143" },
+      { n: "生活雑貨", s: "ユニークなアイテムを", u: BASE + "/category?category_id=1129" },
+    ],
+    "アートハウス": [
+      { n: "インテリア小物・照明", s: "アートな照明で演出", u: BASE + "/category?category_id=1128" },
+      { n: "椅子", s: "個性的な一脚", u: BASE + "/category?category_id=1127" },
+      { n: "テーブル・机", s: "こだわりの机を", u: BASE + "/category?category_id=1126" },
+    ],
+  };
+  const DC = [
+    { n: "ソファ", s: "くつろぎのアイテム", u: BASE + "/category?category_id=1124" },
+    { n: "インテリア小物・照明", s: "雰囲気をつくるアイテム", u: BASE + "/category?category_id=1128" },
+    { n: "生活雑貨", s: "毎日を彩るアイテム", u: BASE + "/category?category_id=1129" },
+  ];
+
+  const PROMPT =
+    "あなたは優しい映画評論家です。この部屋の写真を分析して、以下のJSONのみで答えてください。JSON以外のテキストは不要です。\n\n" +
+    "ルール:\n" +
+    "- タイトルは色+物+時間の羅列パターン禁止。余韻のあるタイトルにしてください。\n" +
+    "- ジャンル: ロマンス/ミステリー/ファンタジー/ドラマ/ヒーリング/アートハウス のいずれか\n" +
+    "- シーン: 共感できるリアルなシーン。部屋に既にあるアイテムの推薦は禁止。\n" +
+    "- 重要: すべての日本語テキストは自然な日本語で書いてください。\n" +
+    "- 口調: ～ですね/～でしょう/～かもしれません のような優しく丁寧な口調を使ってください。\n\n" +
+    '{"genre":"ジャンル","genreEmoji":"絵文字","title":"日本語タイトル10文字以内","tagline":"優しいタグライン15~25文字","year":"1995~2024","traits":["キーワード","キーワード","キーワード"],"castTraits":["性格","性格","性格","性格"],"castDesc":"主人公の描写2~3文","scenes":["シーン1","シーン2","シーン3"]}';
+
+  const BP = [1,2,1,1,3,1,1,2,1,3,1,1,2,1,1,3,2,1,1,2,1,3,1,1,2,1,2,1,3,1,1,2,1,1,3,1,2,1,1,2,3,1,1,2,1,3,1,1,2,1];
+
+  let previewDataUrl = null, base64Data = null;
+
+  const uploadArea = document.getElementById('upload-area');
+  const fileInput  = document.getElementById('file-input');
+  const previewImg = document.getElementById('preview-img');
+  const placeholder = document.getElementById('upload-placeholder');
+  const btnAnalyze  = document.getElementById('btn-analyze');
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  uploadArea.addEventListener('click', () => fileInput.click());
+  uploadArea.addEventListener('dragover', e => e.preventDefault());
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  document.getElementById('btn-retry').addEventListener('click', reset);
+  document.getElementById('btn-reset').addEventListener('click', reset);
+  btnAnalyze.addEventListener('click', startAnalysis);
+
+  function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height, MAX = 1200;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const c = canvas.toDataURL('image/jpeg', 0.82);
+        base64Data = c.split(',')[1];
+        previewDataUrl = c;
+        previewImg.src = c;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+        btnAnalyze.disabled = false;
+        btnAnalyze.classList.add('ready');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function startAnalysis() {
+    showScreen('loading');
+    const msgs = ['チケット印刷中...','ジャンル分析中...','主人公を探し中...','もうすぐ完了...'];
+    let mi = 0;
+    document.getElementById('loading-msg').textContent = msgs[0];
+    const iv = setInterval(() => { mi = (mi+1)%msgs.length; document.getElementById('loading-msg').textContent = msgs[mi]; }, 1600);
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          max_tokens: 1200,
+          messages: [{ role: 'user', content: [
+            { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + base64Data } },
+            { type: 'text', text: PROMPT },
+          ]}],
+        }),
+      });
+      clearInterval(iv);
+      const data = await res.json();
+      if (!res.ok || !data.choices) { showError('APIエラー ' + res.status + ': ' + (data.error ? data.error.message : JSON.stringify(data).slice(0,100))); return; }
+      const raw = data.choices[0].message.content || '';
+      const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+      if (s < 0 || e < 0) { showError('JSONなし: ' + raw.slice(0,100)); return; }
+      let parsed;
+      try { parsed = JSON.parse(raw.slice(s, e+1).replace(/[\x00-\x1F\x7F]/g, ' ')); }
+      catch(pe) { showError('パースエラー: ' + pe.message); return; }
+      renderResult(parsed);
+    } catch(err) {
+      clearInterval(iv);
+      showError(err.name + ': ' + err.message);
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('err-msg').textContent = msg;
+    showScreen('error');
+  }
+
+  function renderResult(r) {
+    const tNo = 'OH-' + (r.year||'2024') + '-' + (Math.floor(Math.random()*9000)+1000);
+    document.getElementById('result-img').src = previewDataUrl;
+    document.getElementById('result-genre-badge').textContent = (r.genreEmoji||'') + ' ' + (r.genre||'');
+    document.getElementById('result-title').textContent = r.title||'';
+    document.getElementById('result-tagline').textContent = r.tagline||'';
+    document.getElementById('result-year').textContent = r.year||'—';
+    document.getElementById('result-genre-text').textContent = r.genre||'—';
+    document.getElementById('result-ticketno').textContent = tNo;
+    document.getElementById('barcode-num').textContent = tNo;
+
+    const traitsEl = document.getElementById('result-traits');
+    traitsEl.innerHTML = '';
+    (r.traits||[]).forEach(t => {
+      const sp = document.createElement('span');
+      sp.className = 'trait-tag'; sp.textContent = t;
+      traitsEl.appendChild(sp);
+    });
+
+    const castTraitsEl = document.getElementById('result-cast-traits');
+    castTraitsEl.innerHTML = '';
+    (r.castTraits||[]).forEach(t => {
+      const sp = document.createElement('span');
+      sp.className = 'trait-tag'; sp.textContent = t;
+      castTraitsEl.appendChild(sp);
+    });
+    document.getElementById('result-cast-desc').textContent = r.castDesc||'';
+
+    const scenesEl = document.getElementById('result-scenes');
+    scenesEl.innerHTML = '';
+    (r.scenes||[]).forEach(sc => {
+      scenesEl.innerHTML += '<div class="scene-item"><span class="scene-arrow">▸</span><span class="scene-text">' + sc + '</span></div>';
+    });
+
+    // Barcode
+    const svg = document.getElementById('barcode-svg');
+    svg.innerHTML = '';
+    let x = 0;
+    BP.forEach((w, i) => {
+      if (i%2===0) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x', x); rect.setAttribute('y', 0);
+        rect.setAttribute('width', w*2.2); rect.setAttribute('height', 40);
+        rect.setAttribute('fill','#575757'); rect.setAttribute('opacity','0.7');
+        svg.appendChild(rect);
+      }
+      x += w*2.2;
+    });
+    svg.setAttribute('viewBox','0 0 '+x+' 40');
+
+    const cats = GC[r.genre]||DC;
+    const cardsEl = document.getElementById('reco-cards');
+    cardsEl.innerHTML = '';
+    cats.forEach(cat => {
+      cardsEl.innerHTML += `
+        <a class="reco-card" href="${cat.u}" target="_blank" rel="noopener noreferrer">
+          <div>
+            <div class="reco-card-name">${cat.n}</div>
+            <div class="reco-card-sub">${cat.s}</div>
+          </div>
+          <div class="reco-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00A1FF" stroke-width="2.2" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>`;
+    });
+
+    showScreen('result');
+  }
+
+  document.getElementById('btn-save-ticket').addEventListener('click', async function() {
+    const ticket = document.querySelector('.ticket');
+    const btn = this;
+    btn.textContent = '保存中...';
+    btn.disabled = true;
+    try {
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 200));
+      const w = ticket.offsetWidth;
+      const h = ticket.offsetHeight;
+      const scale = 3;
+      const svgDataUrl = await domtoimage.toSvg(ticket, {
+        width: w,
+        height: h,
+        cacheBust: true
+      });
+      const img = new Image();
+      img.width = w * scale;
+      img.height = h * scale;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = svgDataUrl;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w * scale, h * scale);
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'ohouse-movie-ticket.png';
+      link.href = dataUrl;
+      link.click();
+      btn.textContent = '保存完了！';
+      setTimeout(() => { btn.textContent = 'チケット画像を保存する'; btn.disabled = false; }, 2000);
+    } catch(e) {
+      console.error('Save error:', e);
+      btn.textContent = 'チケット画像を保存する';
+      btn.disabled = false;
+      alert('保存に失敗しました。もう一度お試しください。');
+    }
+  });
+
+  function reset() {
+    previewDataUrl = null; base64Data = null;
+    previewImg.src = ''; previewImg.style.display = 'none';
+    placeholder.style.display = 'flex';
+    btnAnalyze.disabled = true; btnAnalyze.classList.remove('ready');
+    fileInput.value = '';
+    showScreen('upload');
+  }
+</script>
+</body>
+</html>
