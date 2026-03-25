@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.5/dist/dom-to-image-more.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: #F0F4F8; font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
 
-    .screen { display: none; min-height: 100vh; }
+    .screen { display: none; min-height: 100vh; min-height: 100dvh; }
     .screen.active { display: flex; }
 
     #screen-upload { align-items: center; justify-content: center; padding: 24px; }
@@ -61,10 +61,10 @@
     .ticket-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 600; color: #00A1FF; letter-spacing: 0.1em; white-space: nowrap; flex-shrink: 0; display: inline-block; }
 
     .poster { position: relative; height: 320px; overflow: hidden; }
-    .poster img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) saturate(1.2); display: block; }
+    .poster-bg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(0.55) saturate(1.2); }
     .poster-gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,8,16,0.92) 0%, rgba(8,8,16,0.2) 55%, transparent 100%); }
     .poster-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 18px 20px 20px; }
-    .genre-badge { display: inline-flex; align-items: center; background: #00A1FF; color: white; font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 3px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+    .genre-badge { display: inline-flex; align-items: center; background: #00A1FF; color: white; font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 3px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; white-space: nowrap; }
     .movie-title { font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; font-size: 28px; font-weight: 900; color: white; line-height: 1.2; letter-spacing: -0.5px; }
     .movie-tagline { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 8px; line-height: 1.6; }
 
@@ -185,7 +185,7 @@
       </div>
 
       <div class="poster">
-        <img id="result-img" alt="" />
+        <div class="poster-bg" id="result-img"></div>
         <div class="poster-gradient"></div>
         <div class="poster-info">
           <div class="genre-badge" id="result-genre-badge"></div>
@@ -305,7 +305,8 @@
   const PROMPT =
     "あなたは優しい映画評論家です。この部屋の写真を分析して、以下のJSONのみで答えてください。JSON以外のテキストは不要です。\n\n" +
     "ルール:\n" +
-    "- 重要: titleは必ず以下の映画リストからお部屋の雰囲気に最も合うものを選んでください。自分で作らないでください。\n" +
+    "- 重要: titleは必ず以下の映画リストから選んでください。自分で作らないでください。\n" +
+    "- 映画選択基準: タイトルの文字ではなく、映画の実際のストーリー/雰囲気/感性がこの空間に合うかを基準に選んでください。例: オフィスの写真なら仕事関連の映画、居心地の良い部屋ならヒーリング/ロマンス映画。\n" +
     "- genre: 選んだ映画の実際のジャンル (ロマンス/ミステリー/ファンタジー/ドラマ/ヒーリング/アートハウス/アクション/コメディ/SF/スリラー のいずれか)\n" +
     "- year: 選んだ映画の実際の公開年\n" +
     "- tagline, traits, castTraits, castDesc, scenes: お部屋の写真の雰囲気と選んだ映画を結びつけて優しく書いてください\n" +
@@ -372,7 +373,7 @@
     document.getElementById('loading-msg').textContent = msgs[0];
     const iv = setInterval(() => { mi = (mi+1)%msgs.length; document.getElementById('loading-msg').textContent = msgs[mi]; }, 1600);
     try {
-      const shuffled = [...JP_MOVIES].sort(() => Math.random() - 0.5).slice(0, 30);
+      const shuffled = [...JP_MOVIES].sort(() => Math.random() - 0.5).slice(0, 40);
       const dynamicPrompt = PROMPT.replace(JP_MOVIES.join(", "), shuffled.join(", "));
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -410,8 +411,10 @@
 
   function renderResult(r) {
     const tNo = 'OH-' + (r.year||'2024') + '-' + (Math.floor(Math.random()*9000)+1000);
-    document.getElementById('result-img').src = previewDataUrl;
-    document.getElementById('result-genre-badge').textContent = (r.genreEmoji||'') + ' ' + (r.genre||'');
+    document.getElementById('result-img').style.backgroundImage = 'url(' + previewDataUrl + ')';
+    const genreBadge = document.getElementById('result-genre-badge');
+    genreBadge.textContent = (r.genreEmoji||'') + ' ' + (r.genre||'');
+    genreBadge.style.cssText = 'white-space:nowrap;display:inline-block';
     document.getElementById('result-title').textContent = r.title||'';
     document.getElementById('result-tagline').textContent = r.tagline||'';
     document.getElementById('result-year').textContent = r.year||'—';
@@ -423,7 +426,8 @@
     traitsEl.innerHTML = '';
     (r.traits||[]).forEach(t => {
       const sp = document.createElement('span');
-      sp.className = 'trait-tag'; sp.textContent = t;
+      sp.className = 'trait-tag'; sp.style.cssText = 'white-space:nowrap;flex-shrink:0;display:inline-block';
+      sp.textContent = t;
       traitsEl.appendChild(sp);
     });
 
@@ -431,7 +435,8 @@
     castTraitsEl.innerHTML = '';
     (r.castTraits||[]).forEach(t => {
       const sp = document.createElement('span');
-      sp.className = 'trait-tag'; sp.textContent = t;
+      sp.className = 'trait-tag'; sp.style.cssText = 'white-space:nowrap;flex-shrink:0;display:inline-block';
+      sp.textContent = t;
       castTraitsEl.appendChild(sp);
     });
     document.getElementById('result-cast-desc').textContent = r.castDesc||'';
@@ -484,38 +489,30 @@
     btn.disabled = true;
     try {
       await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 200));
-      const w = ticket.offsetWidth;
-      const h = ticket.offsetHeight;
-      const scale = 3;
-      const svgDataUrl = await domtoimage.toSvg(ticket, {
-        width: w,
-        height: h,
-        cacheBust: true
+      await new Promise(r => setTimeout(r, 300));
+      const canvas = await html2canvas(ticket, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false
       });
-      const img = new Image();
-      img.width = w * scale;
-      img.height = h * scale;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = svgDataUrl;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = w * scale;
-      canvas.height = h * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, w * scale, h * scale);
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = 'ohouse-movie-ticket.png';
-      link.href = dataUrl;
-      link.click();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'ohouse-movie-ticket.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = 'ohouse-movie-ticket.png';
+        link.href = blobUrl;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      }
       btn.textContent = '保存完了！';
       setTimeout(() => { btn.textContent = 'チケット画像を保存する'; btn.disabled = false; }, 2000);
     } catch(e) {
+      if (e.name === 'AbortError') { btn.textContent = 'チケット画像を保存する'; btn.disabled = false; return; }
       console.error('Save error:', e);
       btn.textContent = 'チケット画像を保存する';
       btn.disabled = false;
