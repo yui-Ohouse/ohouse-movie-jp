@@ -372,15 +372,18 @@
     document.getElementById('loading-msg').textContent = msgs[0];
     const iv = setInterval(() => { mi = (mi+1)%msgs.length; document.getElementById('loading-msg').textContent = msgs[mi]; }, 1600);
     try {
+      const shuffled = [...JP_MOVIES].sort(() => Math.random() - 0.5).slice(0, 30);
+      const dynamicPrompt = PROMPT.replace(JP_MOVIES.join(", "), shuffled.join(", "));
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'meta-llama/llama-4-scout-17b-16e-instruct',
           max_tokens: 1200,
+          temperature: 1.2,
           messages: [{ role: 'user', content: [
             { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + base64Data } },
-            { type: 'text', text: PROMPT },
+            { type: 'text', text: dynamicPrompt },
           ]}],
         }),
       });
